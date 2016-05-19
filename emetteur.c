@@ -48,8 +48,8 @@ static void emetteurInitialiseHardware() {
                                 // (Proteus n'aime pas que CCPRxL dépasse PRx)
 
     // Active le module de conversion A/D:
-    TRISBbits.RB3 = 1;      // Active RB4 comme entrée.
-    ANSELBbits.ANSB3 = 1;   // Active AN11 comme entrée analogique.
+    TRISBbits.RB3 = 1;      // Active RB4 comme entrée. ??RB3??
+    ANSELBbits.ANSB3 = 1;   // Active AN11 comme entrée analogique. ??AN09??
     ADCON0bits.ADON = 1;    // Allume le module A/D.
     ADCON0bits.CHS = 9;     // Branche le convertisseur sur AN09
     ADCON2bits.ADFM = 0;    // Les 8 bits plus signifiants sur ADRESH.
@@ -71,8 +71,8 @@ static void emetteurInitialiseHardware() {
 void emetteurInterruptions() {
     unsigned char p1, p3;
 
-    if (PIR1bits.TMR2IF) {
-        PIR1bits.TMR2IF = 0;
+    if (PIR1bits.TMR2IF) {// Débordement du timer 2 (Interruption : drapeau =1)
+        PIR1bits.TMR2IF = 0;  // On remet le drapeau à 0
         if (pwmEspacement()) {
             p1 = pwmValeur(0);
             p3 = pwmValeur(1);
@@ -84,20 +84,20 @@ void emetteurInterruptions() {
         }
     }
     
-    if (INTCON3bits.INT1F) {
-        INTCON3bits.INT1F = 0;
+    if (INTCON3bits.INT1F) {    // Interruption sur la ligne externe INT1
+        INTCON3bits.INT1F = 0;  // On remet le drapeau à 0
         pwmPrepareValeur(1);
-        ADCON0bits.GO = 1;
+        ADCON0bits.GO = 1;      // Lance une conversion A/D
     }
     
-    if (INTCON3bits.INT2F) {
-        INTCON3bits.INT2F = 0;
+    if (INTCON3bits.INT2F) {    // Interruption sur la ligne externe INT2
+        INTCON3bits.INT2F = 0;  // On remet le drapeau à 0
         pwmPrepareValeur(0);
-        ADCON0bits.GO = 1;
+        ADCON0bits.GO = 1;      // Lance une conversion A/D
     }
     
-    if (PIR1bits.ADIF) {
-        PIR1bits.ADIF = 0;
+    if (PIR1bits.ADIF) { // Conversion A/D terminé (Interruption : drapeau =1)
+        PIR1bits.ADIF = 0;      // On remet le drapeau à 0
         pwmEtablitValeur(ADRESH);
     }
 }

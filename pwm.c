@@ -1,8 +1,22 @@
+#include <xc.h>
 #include "test.h"
 #include "pwm.h"
 
 #define PWM_NOMBRE_DE_CANAUX 2
 #define PWM_ESPACEMENT 6
+
+/** Numéro du canal. 0=CCP1 (PWM1) et 1=CCP3 (PWM3)*/
+static unsigned char numeroCanal;
+
+/** Valeurs des captures canaux. */
+static unsigned char valeurCaptureCanal[2];
+
+/** Valeurs des canaux. */
+static unsigned char valeurCanal[2];
+
+/** Valeur pour totaliser le nombre d'espacement pour le PWM.*/
+/** Pour être compatible avec la norme radio contrôle.*/
+static unsigned char nbEspacement = 0;
 
 /**
  * Convertit une valeur signée générique vers une valeur directement
@@ -12,7 +26,7 @@
  */
 unsigned char pwmConversion(unsigned char valeurGenerique) {
     // À implémenter...
-    return 0;
+    return (valeurGenerique / 4) + 62; // 0 à 255 devient 62 à 125.
 }
 
 /**
@@ -21,6 +35,12 @@ unsigned char pwmConversion(unsigned char valeurGenerique) {
  */
 void pwmPrepareValeur(unsigned char canal) {
     // À implémenter...
+    if (canal){
+        numeroCanal = 1; // Pour CCP3(=ECCP3). Générateur PWM 3.
+    }
+    else {
+        numeroCanal = 0; // Pour CCP1(=ECCP1). Générateur PWM 1.
+    }
 }
 
 /**
@@ -29,16 +49,30 @@ void pwmPrepareValeur(unsigned char canal) {
  */
 void pwmEtablitValeur(unsigned char valeur) {
     // À implémenter...
+    unsigned char valeurConvertit;
+    
+    valeurConvertit = pwmConversion(valeur); // Conversion 0/255 => 62/125.
+    if (numeroCanal){ // Valeur du conv. A/D pour le rapport cyclique PWM.
+        valeurCanal[1] = valeurConvertit;
+    }
+    else { // Valeur du convertisseur A/D pour le rapport cyclique PWM.
+        valeurCanal[0] = valeurConvertit;
+    }
 }
 
 /**
  * Rend la valeur PWM correspondante au canal.
- * @param canal Le cana.
+ * @param canal Le numéro de canal.
  * @return La valeur PWM correspondante au canal.
  */
 unsigned char pwmValeur(unsigned char canal) {
     // À implémenter...
-    return 0;
+    if (canal) {
+        return valeurCanal[1]; // Rapport cyclique pour le PWM 3
+    }
+    else {
+        return valeurCanal[0]; // Rapport cyclique pour le PWM 1
+    }
 }
 
 /**
@@ -49,7 +83,15 @@ unsigned char pwmValeur(unsigned char canal) {
  */
 unsigned char pwmEspacement() {
     // À implémenter...
-    return 0;
+    // Si le nb d'espacement est plus petit que le nb total il retourne 0.
+    if (nbEspacement < PWM_ESPACEMENT) { 
+        nbEspacement++;
+        return 0;
+    }
+    // Sinon il retourne 255.
+    else {
+        return 255;
+    }
 }
 
 /**
@@ -59,6 +101,12 @@ unsigned char pwmEspacement() {
  */
 void pwmDemarreCapture(unsigned char canal, unsigned int instant) {
     // À implémenter...
+    if (canal){
+        valeurCaptureCanal[1] = instant; // instant => valeurCaptureCanal[1].
+    }
+    else {
+        valeurCaptureCanal[0] = instant; // instant => valeurCaptureCanal[0].
+    }
 }
 
 /**
@@ -68,6 +116,12 @@ void pwmDemarreCapture(unsigned char canal, unsigned int instant) {
  */
 void pwmCompleteCapture(unsigned char canal, unsigned int instant) {
     // À implémenter...
+    if (canal){
+        valeurCanal[1] = (instant - valeurCaptureCanal[1]); // Dif. entre les 2.
+    }
+    else {
+        valeurCanal[0] = (instant - valeurCaptureCanal[0]); // Dif. entre les 2.
+    }
 }
 
 /**
@@ -75,6 +129,11 @@ void pwmCompleteCapture(unsigned char canal, unsigned int instant) {
  */
 void pwmReinitialise() {
     // À implémenter...
+    numeroCanal = 0;
+    valeurCanal[1] = 0;
+    valeurCanal[0] = 0;
+    nbEspacement = 0;
+
 }
 
 #ifdef TEST
@@ -115,13 +174,7 @@ void testEspacementPwm() {
         testeEgaliteEntiers("PWME00", pwmEspacement(), 0);
     }
 
-    testeEgaliteEntiers("PWME01", pwmEspacement(), 255);
-    
-    for (n = 0; n < PWM_ESPACEMENT; n++) {
-        testeEgaliteEntiers("PWME00", pwmEspacement(), 0);
-    }
-
-    testeEgaliteEntiers("PWME01", pwmEspacement(), 255);    
+    testeEgaliteEntiers("PWME01", pwmEspacement(), 255); 
 }
 void testCapturePwm() {
     

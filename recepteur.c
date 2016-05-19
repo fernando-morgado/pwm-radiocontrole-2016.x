@@ -6,7 +6,7 @@
 #define CAPTURE_FLANC_DESCENDANT 0b100
 
 /**
- * Initialise le hardware pour l'émetteur.
+ * Initialise le hardware pour le récepteur.
  */
 static void recepteurInitialiseHardware() {
 
@@ -69,8 +69,8 @@ static void recepteurInitialiseHardware() {
 void recepteurInterruptions() {
     unsigned char p1, p3;
     
-    if (PIR1bits.TMR2IF) {
-        PIR1bits.TMR2IF = 0;
+    if (PIR1bits.TMR2IF) {// Débordement du timer 2 (Interruption : drapeau =1)
+        PIR1bits.TMR2IF = 0;  // On remet le drapeau à 0
         if (pwmEspacement()) {
             p1 = pwmValeur(0);
             p3 = pwmValeur(1);
